@@ -23,18 +23,18 @@ for i= 1:length(x)
     T_S(i) = (k*T_F+h*x(i)*(T_P))/(k+h*x(i));
     Step = 0; % Initialize Step
     while T_S(i) > T_S_max
+        T_P_values(i) = T_P-Step-273.15; % Save T_P value in each iteration
         Step = Step + 25; % Increment Step dynamically
         T_S(i) = (k*T_F+h*x(i)*(T_P-Step))/(k+h*x(i));
-        T_P_values(i) = T_P-Step; % Save T_P value in each iteration
         %disp(['Iteration ', num2str(i), ': T_P = ', num2str(T_P-Step), ' K']); % Display T_P in each iteration
     end
+    T_P_values(i) = T_P-Step-273.15; % Save T_P value in each iteration
 end
 
-plot(t,T_S-273.15); hold on; plot(t,T_S_max*ones(1,length(x))-273.15); xlabel('time [hr]'); ylabel('T_{S} [degC]')
+plot(t,T_S-273.15); hold on; plot(t,T_S_max*ones(1,length(x))-273.15); plot(t,T_P_values)
+xlabel('time [hr]'); ylabel('T_{S} [degC]'); legend('T_{S}','T_{S,max}','T_{P}'); grid on
 
-time = linspace(1,5,length(x));
-figure(2)
-plot(time,T_P_values)
+
 
 function outODE = distance_ODE(t, x)
     global k h T_P T_F rho_s W delH_s
