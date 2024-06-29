@@ -61,18 +61,3 @@ SS_tot = sum((freq_norm - mean(freq_norm)).^2);
 SS_res = sum((freq_norm - model_func(optimal_params, Dp)).^2);
 R_squared = 1 - SS_res / SS_tot;
 fprintf('R-squared value: %.4f\n', R_squared);
-
-% Save the figure
-saveas(gcf, 'particle_size_distribution_fit.png');
-
-% Print summary to file
-fid = fopen('fitting_results.txt', 'w');
-fprintf(fid, 'Particle-Size Distribution Fitting Results\n');
-fprintf(fid, '==========================================\n');
-fprintf(fid, 'Optimal mu: %.4f μm\n', mu_optimal);
-fprintf(fid, 'Optimal beta: %.4f μm\n', beta_optimal);
-fprintf(fid, 'Final error: %.6e\n', fval);
-fprintf(fid, 'R-squared value: %.4f\n', R_squared);
-fprintf(fid, 'Exit flag: %d\n', exitflag);
-fprintf(fid, 'Number of iterations: %d\n', output.iterations);
-fclose(fid);
