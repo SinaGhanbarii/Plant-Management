@@ -1,50 +1,78 @@
-clear, clc
+% Exercise 1.1 - Advanced Numerical Methods
+% Fitting particle-size distribution data
+
+% Clear workspace and close all figures
+clear all;
+close all;
+clc;
+
 % Define the experimental data
-Dp = [1.5, 4, 7.5, 12.5, 20, 27.5, 32.5, 37.5];
-freq = [2.07, 2.17, 12.28, 17.23, 37.00, 11.84, 5.44, 11.97];
+Dp = [1.5, 4, 7.5, 12.5, 20, 27.5, 32.5, 37.5];  % Particle size (μm)
+freq = [2.07, 2.17, 12.28, 17.23, 37.00, 11.84, 5.44, 11.97];  % Frequency (%)
 
 % Normalize the frequency data
 freq_norm = freq / sum(freq);
 
-% Set initial guess for parameters
-initial_guess = [15.5, 9];  % Initial guess for [mu, beta]
+% Define the model function
+model_func = @(params, x) (1./params(2)) .* exp(-(((x - params(1))./params(2)) + exp(-(x - params(1))./params(2))));
 
-% Perform optimization
-options = optimset('Display', 'iter');
-[optimal_params, fval] = fminsearch(@error_func, initial_guess, options);
+% Define the error function to minimize
+error_func = @(params) sum((model_func(params, Dp) - freq_norm).^2);
+
+% Set initial guess and bounds for parameters [mu, beta]
+initial_guess = [15, 9];
+lb = [0, 0];  % Lower bounds
+ub = [40, 40];  % Upper bounds
+
+% Perform optimization using fmincon (constrained optimization)
+options = optimoptions('fmincon', 'Display', 'iter', 'Algorithm', 'sqp');
+[optimal_params, fval, exitflag, output] = fmincon(error_func, initial_guess, [], [], [], [], lb, ub, [], options);
 
 % Extract optimal parameters
 mu_optimal = optimal_params(1);
 beta_optimal = optimal_params(2);
 
 % Print results
-fprintf('Optimal mu: %.4f\n', mu_optimal);
-fprintf('Optimal beta: %.4f\n', beta_optimal);
+fprintf('Optimization Results:\n');
+fprintf('Optimal mu: %.4f μm\n', mu_optimal);
+fprintf('Optimal beta: %.4f μm\n', beta_optimal);
+fprintf('Final error: %.6e\n', fval);
+fprintf('Exit flag: %d\n', exitflag);
+fprintf('Number of iterations: %d\n', output.iterations);
 
-% Plot the results
+% Generate fitted curve
 x_fine = linspace(0, 40, 1000);
 y_fitted = model_func(optimal_params, x_fine);
 
-figure;
-bar(Dp, freq_norm);
+% Plot the results
+figure('Name', 'Particle-Size Distribution: Data vs Fitted Model', 'NumberTitle', 'off');
+bar(Dp, freq_norm, 'FaceColor', [0.8 0.8 0.8]);
 hold on;
 plot(x_fine, y_fitted, 'r-', 'LineWidth', 2);
-xlabel('Particle Size (μm)');
-ylabel('Normalized Frequency');
-legend('Experimental Data', 'Fitted Model');
-title('Particle-Size Distribution: Data vs Fitted Model');
+xlabel('Particle Size D_p (μm)', 'FontSize', 12);
+ylabel('Normalized Frequency', 'FontSize', 12);
+legend('Experimental Data', 'Fitted Model', 'Location', 'best');
+title('Particle-Size Distribution: Data vs Fitted Model', 'FontSize', 14);
+grid on;
+hold off;
 
-% Define the model function
-function y = model_func(params, x)
-    mu = params(1);
-    beta = params(2);
-    z = (x - mu) / beta;
-    y = (1/beta) * exp(-(z + exp(-z)));
-end
+% Calculate R-squared value
+SS_tot = sum((freq_norm - mean(freq_norm)).^2);
+SS_res = sum((freq_norm - model_func(optimal_params, Dp)).^2);
+R_squared = 1 - SS_res / SS_tot;
+fprintf('R-squared value: %.4f\n', R_squared);
 
-% Define the error function to minimize
-function err = error_func(params)
-    global Dp freq_norm
-    predicted = model_func(params, Dp);
-    err = sum((predicted - freq_norm).^2);
-end
+% Save the figure
+saveas(gcf, 'particle_size_distribution_fit.png');
+
+% Print summary to file
+fid = fopen('fitting_results.txt', 'w');
+fprintf(fid, 'Particle-Size Distribution Fitting Results\n');
+fprintf(fid, '==========================================\n');
+fprintf(fid, 'Optimal mu: %.4f μm\n', mu_optimal);
+fprintf(fid, 'Optimal beta: %.4f μm\n', beta_optimal);
+fprintf(fid, 'Final error: %.6e\n', fval);
+fprintf(fid, 'R-squared value: %.4f\n', R_squared);
+fprintf(fid, 'Exit flag: %d\n', exitflag);
+fprintf(fid, 'Number of iterations: %d\n', output.iterations);
+fclose(fid);
